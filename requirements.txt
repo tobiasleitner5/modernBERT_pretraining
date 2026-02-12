@@ -1,0 +1,6 @@
+transformers
+flash-attn # should be installed when running on a GPU
+tokenizers
+nltk
+tqdm
+Jinja2
