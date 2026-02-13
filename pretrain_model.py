@@ -30,6 +30,10 @@ if not os.path.exists(args.data_folder):
     raise ValueError(f"The provided data folder path does not exist: {args.data_folder}")
 print(f"Data folder: {args.data_folder}")
 
+# Create the output directory if it doesn't exist
+os.makedirs(args.output_dir, exist_ok=True)
+print(f"Output directory: {args.output_dir}")
+
 # Load configuration and initialize model with random weights
 config = ModernBertConfig.from_pretrained("answerdotai/ModernBERT-base")
 print(config)
@@ -71,12 +75,15 @@ def tokenize_function(examples):
 # The whole dataset is tokenized in a streaming fashion, which is memory efficient.
 # This is done in batches.
 # Note that the tokenization is not done on the fly during training. It is done before.
+cache_path = os.path.join(args.output_dir, "tokenized_dataset.arrow")
 print("Tokenizing dataset...")
 tokenized_dataset = dataset.map(
     tokenize_function,
     batched=True,
     remove_columns=["text"],
     desc="Tokenizing",
+    cache_file_name=cache_path,
+    load_from_cache_file=True
 )
 
 # Data collator for MLM: it does the masking.
