@@ -4,4 +4,8 @@ Two separate files:
 - pretrain_tokenizer.py
 - pretrain_model.py
 
-`--data_folder` needs to point to the zipped Reuters files. The column "Body" is assumed to contain the text for pretraining.
+## Start the tokenizer training
+`python3 pretrain_tokenizer.py --data_folder <folder with zipped news>`
+
+## Start the model training
+`python3 pretrain_model.py --data_folder <folder with zipped news>`
