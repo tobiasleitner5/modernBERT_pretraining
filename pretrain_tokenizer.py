@@ -1,9 +1,7 @@
 from tokenizers import Tokenizer, models, trainers, pre_tokenizers, processors
 from transformers import PreTrainedTokenizerFast
 import argparse
-import tempfile
 import os
-from tqdm import tqdm
 from utils import extract_body_from_gzipped_csvs
 
 # This script is designed to pretrain the ModernBERT tokenizer on a custom dataset.
@@ -25,21 +23,6 @@ if not os.path.exists(args.data_folder):
 if not os.path.isdir(args.data_folder):
     raise ValueError(f"The provided data folder path is not a directory: {args.data_folder}")
 
-# Extract texts from gzipped CSVs
-# Each line in the csv is a separate sequence.
-# Technically, the article is the sequence. But I want to split it into sentences and separate them with [SEP] tokens.
-# This is done in utils.py, where I use the NLTK library to split the text into sentences. The sentences are then joined with [SEP] tokens.
-texts = extract_body_from_gzipped_csvs(args.data_folder)
-print(f"Extracted {len(texts)} text samples")
-
-# Write texts to a temporary file for the tokenizer trainer
-print("Writing texts to temporary file...")
-temp_file = tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False, encoding='utf-8')
-for text in tqdm(texts, desc="Writing texts", unit="article"):
-    temp_file.write(text + '\n')
-temp_file.close()
-data_files = [temp_file.name]
-
 # ModernBERT uses a BPE tokenizer, which is a subword tokenization method
 # The pretokenizer is responsible for splitting the input text into smaller units.
 tokenizer = Tokenizer(models.BPE(unk_token="[UNK]"))
@@ -56,9 +39,14 @@ trainer = trainers.BpeTrainer(
     min_frequency=2, # tokens that do not appear at lest 2 times are not included in the vocab.
 )
 
-# Train on your data
-print("Training tokenizer (this may take a while)...")
-tokenizer.train(files=data_files, trainer=trainer)
+# Train directly from generator - no temp file, truly streaming!
+# Each line in the csv is a separate sequence (article).
+# The articles are split into sentences separated by [SEP] tokens in utils.py.
+print("Training tokenizer (streaming from gzipped files)...")
+tokenizer.train_from_iterator(
+    extract_body_from_gzipped_csvs(args.data_folder),
+    trainer=trainer,
+)
 print("Tokenizer training finished!")
 
 # Add post-processor for BERT-style formatting
@@ -81,8 +69,6 @@ hf_tokenizer = PreTrainedTokenizerFast(
 )
 hf_tokenizer.save_pretrained("./my_tokenizer")
 
-# Clean up temporary file
-os.unlink(temp_file.name)
 print("Tokenizer training complete. Saved to ./my_tokenizer")
 
 # hf_tokenizer.push_to_hub("tobileitner/ModernBERT-tokenizer")

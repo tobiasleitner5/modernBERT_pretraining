@@ -4,3 +4,5 @@ tokenizers
 nltk
 tqdm
 Jinja2
+datasets
+torch
