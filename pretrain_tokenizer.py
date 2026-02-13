@@ -34,7 +34,7 @@ special_tokens = ["[PAD]", "[UNK]", "[CLS]", "[SEP]", "[MASK]"]
 # Create trainer
 # The trainer finds the subword units and builds the vocabulary based on the input data.
 trainer = trainers.BpeTrainer(
-    vocab_size=50265,  # You have to set a vocab size. 
+    vocab_size=50265,  # You have to set a vocab size.
     special_tokens=special_tokens, # The first 5 IDs are reserved for the special tokens
     min_frequency=2, # tokens that do not appear at lest 2 times are not included in the vocab.
 )
